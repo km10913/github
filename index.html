@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>간단한 계산기</title>
+<style>
+body{
+background:#f4f4f4; font-family:Arial, sans-serif;
+display:flex; justify-content:center; align-items:center; height:100vh; margin:0;
+}
+.calculator{
+width:280px; background:#fff; border-radius:10px; padding:16px; box-shadow:0 4px 12px rgba(0,0,0,.2);
+}
+.display{
+background:#222; color:#fff; font-size:24px; text-align:right; padding:12px; border-radius:6px; margin-bottom:12px;
+}
+.keys{display:grid; grid-template-columns:repeat(4,1fr); gap:8px}
+button{
+border:none; padding:16px; font-size:18px; border-radius:6px; cursor:pointer;
+}
+/* 홀수는 흰색, 짝수는 검은색 */
+.keys button:nth-child(odd){background:#ffffff; color:#000;}
+.keys button:nth-child(even){background:#000; color:#fff;}
+.equal{grid-column: span 2; background:#3b82f6 !important; color:#fff !important;}
+</style>
+</head>
+<body>
+<div class="calculator">
+<div id="display" class="display">0</div>
+<div class="keys">
+<button data-action="clear">AC</button>
+<button data-action="back">⌫</button>
+<button data-value="%">%</button>
+<button data-value="/">÷</button>
+
+
+<button data-value="7">7</button>
+<button data-value="8">8</button>
+<button data-value="9">9</button>
+<button data-value="*">×</button>
+
+
+<button data-value="4">4</button>
+<button data-value="5">5</button>
+<button data-value="6">6</button>
+<button data-value="-">−</button>
+
+
+<button data-value="1">1</button>
+<button data-value="2">2</button>
+<button data-value="3">3</button>
+<button data-value="+">+</button>
+
+
+<button data-value="0" style="grid-column: span 2;">0</button>
+<button data-value=".">.</button>
+<button data-action="equals" class="equal">=</button>
+</div>
+</div>
+
+
+<script>
+(function(){
+const display = document.getElementById('display');
+const buttons = document.querySelectorAll('button');
+let expression = '';
+let lastOperation = null; // 마지막 연산 저장
+
+
+function updateDisplay(){ display.textContent = expression || '0'; }
+
+
+function safeEval(raw){
+try{
+let expr = raw.replace(/÷/g,'/').replace(/×/g,'*').replace(/−/g,'-');
+expr = expr.replace(/(\d+(?:\.\d+)?)%/g,'($1/100)');
+const fn = new Function('return ('+expr+')');
+const val = fn();
+if(val===Infinity||val===-Infinity||Number.isNaN(val)) throw new Error();
+return Math.round((val+Number.EPSILON)*1e12)/1e12;
+}catch(e){return '오류'}
+}
+
+
+buttons.forEach(btn=>{
+btn.addEventListener('click',()=>{
+const val = btn.dataset.value;
+const act = btn.dataset.action;
+
+
+if(act==='clear'){
+expression='';
+lastOperation=null;
+updateDisplay();
+return;
+}
+if(act==='back'){
+expression=expression.slice(0,-1);
+updateDisplay();
+return;
+}
+if(act==='equals'){
+if(expression){
+let res = safeEval(expression);
+display.textContent=res;
+// 마지막 연산 추출 (숫자 + 연산자 + 숫자 꼴)
+const match = expression.match(/([\d.]+)([+\-*/%])([\d.]+)$/);
+if(match){
+lastOperation = match[2]+match[3];
+}
+expression=String(res);
+} else if(lastOperation){
+// expression이 없고 마지막 연산이 있을 때 반복
+expression = display.textContent + lastOperation;
+let res = safeEval(expression);
+display.textContent=res;
+expression=String(res);
+}
+return;
+}
+
+
+if(val){
+expression += val;
+updateDisplay();
+return;
+}
+});
+});
+
+
+updateDisplay();
+})();
+</script>
+</body>
+</html>
